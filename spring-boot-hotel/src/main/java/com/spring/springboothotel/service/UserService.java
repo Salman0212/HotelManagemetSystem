@@ -1,0 +1,77 @@
+package com.spring.springboothotel.service;
+
+
+import com.spring.springboothotel.exception.RoleNotFoundException;
+import com.spring.springboothotel.exception.UserAlreadyExistsException;
+import com.spring.springboothotel.model.Role;
+import com.spring.springboothotel.model.User;
+import com.spring.springboothotel.repository.RoleRepository;
+import com.spring.springboothotel.repository.UserRepository;
+import com.spring.springboothotel.request.LoginRequest;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserService implements IUserService{
+
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
+
+    @Override
+    public User register(User user) {
+        if(userRepository.existsByEmail(user.getEmail())){
+            throw new UserAlreadyExistsException(user.getEmail()+ " already exists.");
+        }
+        
+        // Hash the password before storing
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        Role userRole = roleRepository.findByName("ROLE_USER")
+            .orElseThrow(() -> new RoleNotFoundException("ROLE_USER not found"));
+        user.setRoles(Collections.singletonList(userRole));
+        return userRepository.save(user);
+    }
+
+    @Override
+    public Authentication authenticate(LoginRequest request) {
+        return authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
+    }
+
+
+    @Override
+    public List<User> getUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public User getUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Transactional
+    @Override
+    public void deleteUser(String email) {
+        User theUser = getUser(email);
+        if (theUser != null){
+            userRepository.deleteByEmail(email);
+        }
+
+    }
+
+
+}

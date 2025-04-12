@@ -1,0 +1,199 @@
+// import React from 'react'
+
+import { useState } from "react";
+import { addRoom } from "../utils/ApiFunction";
+import RoomTypeSelector from "../common/RoomTypeSelector";
+import { Link, useNavigate } from "react-router-dom";
+import ToastMessage from "../common/ToastMessage";
+import { useAuth } from "../auth/AuthProvider";
+
+const AddRoom = () => {
+  const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
+  const initialRoom = {
+    photo: null,
+    roomType: "",
+    roomPrice: "",
+  };
+
+  const [newRoom, setNewRoom] = useState(initialRoom);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+
+  const handleRoomInputChange = (e) => {
+    const name = e.target.name;
+    let value = e.target.value;
+
+    if (name === "roomPrice") {
+      if (!isNaN(value)) {
+        value = parseInt(value, 10);
+      } else {
+        value = "";
+      }
+    }
+
+    setNewRoom({ ...newRoom, [name]: value });
+  };
+
+  const handleImageChange = (e) => {
+    const selectedImage = e.target.files[0];
+    setNewRoom({ ...newRoom, photo: selectedImage });
+    setImagePreview(URL.createObjectURL(selectedImage));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      setErrorMessage("Please login to add a room");
+      navigate("/login", { state: { path: "/add-room" } });
+      return;
+    }
+
+    if (!isAdmin()) {
+      setErrorMessage("Only administrators can add rooms");
+      return;
+    }
+
+    try {
+      const success = await addRoom(
+        newRoom.photo,
+        newRoom.roomType,
+        newRoom.roomPrice
+      );
+      if (success) {
+        setSuccessMessage("Room added successfully");
+        setNewRoom(initialRoom);
+        setImagePreview("");
+        setErrorMessage("");
+      } else {
+        setErrorMessage("Error adding room");
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        setErrorMessage("Please login with admin privileges to add a room");
+        navigate("/login", { state: { path: "/add-room" } });
+      } else {
+        setErrorMessage(error.message || "Error adding room");
+      }
+    }
+
+    setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 3000);
+  };
+
+  return (
+    <div>
+      <section className="container mt-5 mb-5">
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <a href="/">Home</a>
+            </li>
+            <li className="breadcrumb-item">
+              <a href="/admin">Admin</a>
+            </li>
+            <li className="breadcrumb-item">
+              <a href="/existing-rooms">Existing Rooms</a>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Add Room
+            </li>
+          </ol>
+        </nav>
+        <div className="row justify-content-center">
+          <div className="col-md-8 col-lg-6">
+            <h2 className="mt-5 mb-2">Add a New Room</h2>
+            {successMessage && (
+              <>
+                <div className="alert alert-success fade show">
+                  {successMessage}
+                </div>
+                <ToastMessage message={successMessage} bgColor="success" />
+              </>
+            )}
+
+            {errorMessage && (
+              <>
+                <div className="alert alert-danger fade show">
+                  {errorMessage}
+                </div>
+                <ToastMessage message={errorMessage} bgColor="warning" />
+              </>
+            )}
+            <form onSubmit={handleSubmit}>
+              <div className="mb-3">
+                <label htmlFor="roomType" className="form-label">
+                  Room Type
+                </label>
+                <div>
+                  <RoomTypeSelector
+                    handleRoomInputChange={handleRoomInputChange}
+                    newRoom={newRoom}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="roomPrice" className="form-label">
+                  Room Price
+                </label>
+
+                <input
+                  onChange={handleRoomInputChange}
+                  type="number"
+                  className="form-control"
+                  id="roomPrice"
+                  name="roomPrice"
+                  value={newRoom.roomPrice}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="photo" className="form-label">
+                  Room Photo
+                </label>
+
+                <input
+                  onChange={handleImageChange}
+                  type="file"
+                  className="form-control"
+                  id="photo"
+                  name="photo"
+                  required
+                />
+
+                {/* show image */}
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Preview room image"
+                    className="my-3"
+                    style={{ maxWidth: "400px", maxHeight: "400px" }}
+                  />
+                )}
+              </div>
+
+              <div className="d-grid gap-2 d-md-flex mt-2">
+                <Link
+                  to={"/existing-rooms"}
+                  className="btn btn-outline-info ml-5"
+                >
+                  Back
+                </Link>
+                <button type="submit" className="btn btn-outline-success ml-5">
+                  Save Room
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default AddRoom;
