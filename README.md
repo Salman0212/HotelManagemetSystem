@@ -1,4 +1,4 @@
-Spring Boot Hotel Management System
+Shaik's Hotel Management System
 ===================================
 
 This project is a **Hotel Management System** built using **Spring Boot** for the backend and **React** for the frontend. It provides a comprehensive solution for managing hotel operations, including user authentication, room management, booking management, and role-based access control.
@@ -222,17 +222,3 @@ Future Enhancements
 -   Add more detailed analytics for admin users.
 
 * * * * *
-
-License
--------
-
-This project is licensed under the MIT License. Feel free to use and modify it as needed.
-
-* * * * *
-
-Contributors
-------------
-
--   **Giridhar Shaik** - Developer
-
-For any queries or issues, feel free to contact the contributor.
